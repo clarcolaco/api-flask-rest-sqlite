@@ -35,30 +35,28 @@ def delete_user(user_id):
         st.error(f"Erro ao deletar usuário com ID {user_id}.")
 
 
-def user_update_responde(name, email, api_url):
-
-    if name and not email:
-        response = requests.put(api_url, json={"name": name})
-
-    if not name and email:
-        response = requests.put(api_url, json={"email": email})
-
-    if email and name:
-        response = requests.put(api_url, json={"name": name, "email": email})
-
-    else:
-        response = requests.put(api_url, json={})
-    return response
 
 def update_user(user_id, name, email):
-    response = user_update_responde(name=name,email=email,api_url=f'{API_URL}/{user_id}')
-    if response.status_code == 201:
-        st.success(f"Usuário {name} adicionado com sucesso!")
+    if name and email:
+        response = requests.put(f"{API_URL}/{user_id}", json={"name": name, "email":email})
+    elif name:
+        response = requests.put(f"{API_URL}/{user_id}", json={"name": name})
+    if email:
+        response = requests.put(f"{API_URL}/{user_id}", json={"email":email})
+    
+    if response.status_code == 200:
+        st.success(f"Modificado com sucesso!")
+    elif response.status_code == 400:
+        st.success(f"Email ja utilizado em outro usuario")
     else:
         st.error("Erro ao modificar o usuário.")
 
 
-st.title("Gerenciamento de Usuários")
+st.set_page_config(
+    page_title="Gerenciamento de Usuários - Cadastro",
+    page_icon="🌟", 
+)
+st.title("🌟 Gerenciamento de Usuários")
 
 with st.expander("Lista de Usuários", expanded=False):
     st.header("Usuários Cadastrados")
@@ -125,6 +123,8 @@ with st.expander("Modificar Usuário", expanded=False):
     else:
         st.warning("Digite o ID do usuário para deletar.")
 
+
+st.markdown("[By @clarcolaco - 2024](https://github.com/clarcolaco)")
 # Estilização
 st.markdown("""
     <style>

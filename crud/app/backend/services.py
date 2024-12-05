@@ -1,13 +1,14 @@
 import sqlite3
 from sqlite3 import Connection
+from typing import Tuple, Dict
 
 
 class DbUtils:
-    def __init__(self, database: str = "users.db"):
+    def __init__(self, database:str):
         self.database = database
 
     def get_db(self) -> Connection:
-        conn = sqlite3.connect("users.db")
+        conn = sqlite3.connect(self.database)
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -26,9 +27,9 @@ class Users:
     def __init__(self, db_utils: DbUtils):
         self.db_utils = db_utils
 
-    def creating_user(self, name: str, email: str) -> dict:
+    def creating_user(self, name: str, email: str) -> Tuple[Dict, int]:
         if not name or not email:
-            msg = {
+            msg, status = {
                 "error": "Invalid payload, you need to declare keys name and email, shouldn't be null"
             }, 400
         else:
@@ -40,12 +41,12 @@ class Users:
                         """INSERT INTO users (name, email) VALUES (?,?)""", (name, email)
                     )
                     conn.commit()
-                    msg = {"message": f"User added with success for email {email} "}, 201
+                    msg, status = {"message": f"User added with success for email {email} "}, 201
             except Exception as e:
-                msg = {"error": str(e)}, 500
-        return msg
+                msg, status = {"error": str(e)}, 500
+        return msg, status
 
-    def getting_users(self) -> dict:
+    def getting_users(self) -> Tuple[Dict, int]:
         try:
             conn = self.db_utils.get_db()  
             conn.row_factory = sqlite3.Row
@@ -54,14 +55,14 @@ class Users:
                 cursor.execute("SELECT * FROM users")
                 users = cursor.fetchall()
                 if users:
-                    msg = [dict(user) for user in users], 200
+                    msg, status = [dict(user) for user in users], 200
                 else:
-                    msg = {"message": "No users found"}, 404
+                    msg, status = {"message": "No users found"}, 404
         except Exception as e:
-            msg = {"error": str(e)}, 500
-        return msg
+            msg, status = {"error": str(e)}, 500
+        return msg, status
 
-    def get_one_user_by_id(self, user_id: str) -> dict:
+    def get_one_user_by_id(self, user_id: str) -> Tuple[Dict, int]:
         try:
             conn = self.db_utils.get_db()  
             conn.row_factory = sqlite3.Row
@@ -73,14 +74,14 @@ class Users:
                 user = cursor.fetchall()
                 
                 if user:
-                    msg = dict(user[0]), 200
+                    msg, status = dict(user[0]), 200
                 else:
-                    msg = {"message": "No users found"}, 404
+                    msg, status = {"message": "No users found"}, 404
         except Exception as e:
-            msg = {"error": str(e)}, 500
-        return msg
+            msg, status = {"error": str(e)}, 500
+        return msg, status
 
-    def delete_one_user_by_id(self, user_id: str) -> dict:
+    def delete_one_user_by_id(self, user_id: str) -> Tuple[Dict, int]:
         conn = self.db_utils.get_db() 
         conn.row_factory = sqlite3.Row
         user_id_casted = int(user_id)
@@ -91,18 +92,17 @@ class Users:
             if user:
                 try:
                     cursor.execute(f"DELETE FROM users where id={user_id_casted}")
-                    msg = {
+                    msg, status = {
                         "message": f"User with id {user_id_casted} was deleted with success"
                     }, 200
                 except Exception as e:
-                    msg = {"message": str(e)}, 400
+                    msg, status = {"message": str(e)}, 400
             else:
-                msg = {"message": f"User id {user_id_casted} not found"}, 400
+                msg, status = {"message": f"User id {user_id_casted} not found"}, 400
 
-        return msg
+        return msg, status
 
-    def updating_user_by_id(self, payload: dict, user_id: str) -> dict:
-
+    def updating_user_by_id(self, payload: dict, user_id: str) -> Tuple[Dict, int]:
         name, email = payload.get("name", None), payload.get("email", None)
         conn = self.db_utils.get_db() 
         conn.row_factory = sqlite3.Row
@@ -112,33 +112,41 @@ class Users:
             cursor = conn.cursor()
             cursor.execute(f"SELECT * FROM users where id={user_id_casted}")
             user = cursor.fetchall()
+            cursor.execute(f"SELECT distinct email FROM users")
+            emails_from_bd = cursor.fetchall()
+            emails_list = [row[0] for row in emails_from_bd]
 
             if user:
-                if name and email:
-                    cursor.execute(
+                if name and email: 
+                    if email in emails_list:
+                        msg, status= {"message": "This email is alread set by other user"}, 400
+                    
+                    else:
+                        cursor.execute(
                         "UPDATE users SET name = ?, email = ? where id=?",
                         (name, email, user_id_casted)
-                    )
-                    msg = {
-                        "message": f"Keys name and email changed for id {user_id_casted} with success"
-                    }, 200
-                elif name and not email:
+                        )
+                        msg, status = {
+                            "message": f"Keys name and email changed for id {user_id_casted} with success"
+                        }, 200
+                elif name:
                     cursor.execute("UPDATE users SET name = ? where id= ?", (name, user_id_casted))
-                    msg = {
+                    msg, status = {
                         "message": f"Key name changed for id {user_id_casted} with success"
                     }, 200
-                elif email and not name:
-                    cursor.execute("UPDATE users SET email = ? where id = ?",(email, user_id_casted))
-                    msg = {
-                        "message": f"Key email changed for id {user_id_casted} with success"
-                    }, 200
+                elif email:
+                    if email in emails_list:
+                        msg, status= {"message": "This email is alread set by other user"}, 400
+                    else:
+                        cursor.execute("UPDATE users SET email = ? where id = ?",(email, user_id_casted))
+                        msg, status = {"message": f"Key email changed for id {user_id_casted} with success"}, 200
 
                 else:
-                    msg = {
+                    msg, status = {
                         "error": "Isn't a valid payload, please declare name or email key to update"
                     }, 500
             else:
-                msg = {"error": "Invalid id"}, 500
+                msg, status = {"error": "Invalid id"}, 500
         
 
-        return msg
+        return msg, status

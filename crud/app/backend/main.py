@@ -49,6 +49,6 @@ def update_user_by_id(user_id: str):
 
 
 if __name__ == "__main__":
-    db_utils = DbUtils()
+    db_utils = DbUtils("sqlite.db")
     db_utils.init_db()
     app.run(host="127.0.0.1", port=5001, debug=True)
