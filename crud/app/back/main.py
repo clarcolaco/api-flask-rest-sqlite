@@ -39,9 +39,12 @@ def drop_user_by_id(user_id: str):
 @app.route("/users/<string:user_id>", methods=["PUT"])
 def update_user_by_id(user_id: str):
     payload = request.get_json()
-    response, status_code = Users(db_utils).updating_user_by_id(
+    if payload:
+        response, status_code = Users(db_utils).updating_user_by_id(
         payload=payload, user_id=user_id
     )
+    else:
+        response, status_code = {"mensage": "Payload is empty"}, 400
     return response, status_code
 
 

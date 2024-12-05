@@ -35,6 +35,29 @@ def delete_user(user_id):
         st.error(f"Erro ao deletar usuário com ID {user_id}.")
 
 
+def user_update_responde(name, email, api_url):
+
+    if name and not email:
+        response = requests.put(api_url, json={"name": name})
+
+    if not name and email:
+        response = requests.put(api_url, json={"email": email})
+
+    if email and name:
+        response = requests.put(api_url, json={"name": name, "email": email})
+
+    else:
+        response = requests.put(api_url, json={})
+    return response
+
+def update_user(user_id, name, email):
+    response = user_update_responde(name=name,email=email,api_url=f'{API_URL}/{user_id}')
+    if response.status_code == 201:
+        st.success(f"Usuário {name} adicionado com sucesso!")
+    else:
+        st.error("Erro ao modificar o usuário.")
+
+
 st.title("Gerenciamento de Usuários")
 
 with st.expander("Lista de Usuários", expanded=False):
@@ -73,6 +96,30 @@ with st.expander("Deletar Usuário", expanded=False):
             confirm_delete = st.button("Confirmar Exclusão")
             if confirm_delete:
                 delete_user(str(user_id))
+        else:
+            st.warning("Usuário não encontrado com o ID informado.")
+    else:
+        st.warning("Digite o ID do usuário para deletar.")
+
+
+with st.expander("Modificar Usuário", expanded=False):
+    user_id = st.text_input("ID do Usuário para Modificar")
+
+    if user_id:
+        users_data = get_users()  
+        user = next((user for user in users_data if str(user['id']) == user_id), None)
+        
+        if user:
+
+            st.write(f"**Nome**: {user['name']}")
+            st.write(f"**E-mail**: {user['email']}")
+
+            
+            name_input = st.text_input("Nome do Usuário Modificado")
+            email_input = st.text_input("E-mail do Usuário Modificado")
+            submit_update = st.button("Confirmar Edição")
+            if submit_update:
+                update_user(user_id=str(user_id), name=name_input, email=email_input)
         else:
             st.warning("Usuário não encontrado com o ID informado.")
     else:

@@ -33,7 +33,7 @@ class Users:
             }, 400
         else:
             try:
-                conn = self.db_utils.get_db()  # Conexão com o banco
+                conn = self.db_utils.get_db()  
                 with conn:
                     cursor = conn.cursor()
                     cursor.execute(
@@ -47,7 +47,7 @@ class Users:
 
     def getting_users(self) -> dict:
         try:
-            conn = self.db_utils.get_db()  # Conexão com o banco
+            conn = self.db_utils.get_db()  
             conn.row_factory = sqlite3.Row
             with conn:
                 cursor = conn.cursor()
@@ -63,7 +63,7 @@ class Users:
 
     def get_one_user_by_id(self, user_id: str) -> dict:
         try:
-            conn = self.db_utils.get_db()  # Conexão com o banco
+            conn = self.db_utils.get_db()  
             conn.row_factory = sqlite3.Row
             with conn:
                 user_id_casted = int(user_id)
@@ -71,6 +71,7 @@ class Users:
                 cursor.execute(f"SELECT * FROM users where id={user_id_casted}")
                 conn.commit()
                 user = cursor.fetchall()
+                
                 if user:
                     msg = dict(user[0]), 200
                 else:
@@ -101,36 +102,33 @@ class Users:
         return msg
 
     def updating_user_by_id(self, payload: dict, user_id: str) -> dict:
-        if payload:
-            name, email = payload.get("name", None), payload.get("email", None)
-            with self.db_utils.get_db() as conn:
-                conn.row_factory = sqlite3.Row
-                user_id_casted = int(user_id)
-                cursor = conn.cursor()
-                cursor.execute(f"SELECT * FROM users where id={user_id_casted}")
-                user = cursor.fetchall()
+
+        name, email = payload.get("name", None), payload.get("email", None)
+        conn = self.db_utils.get_db() 
+        conn.row_factory = sqlite3.Row
+        user_id_casted = int(user_id)
+
+        with conn:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM users where id={user_id_casted}")
+            user = cursor.fetchall()
 
             if user:
                 if name and email:
                     cursor.execute(
                         "UPDATE users SET name = ?, email = ? where id=?",
-                        (name, email, user_id_casted),
+                        (name, email, user_id_casted)
                     )
                     msg = {
                         "message": f"Keys name and email changed for id {user_id_casted} with success"
                     }, 200
                 elif name and not email:
-                    cursor.execute(
-                        "UPDATE users SET name = ?  where id= ?", (name, user_id_casted)
-                    )
+                    cursor.execute("UPDATE users SET name = ? where id= ?", (name, user_id_casted))
                     msg = {
                         "message": f"Key name changed for id {user_id_casted} with success"
                     }, 200
                 elif email and not name:
-                    cursor.execute(
-                        "UPDATE users SET email = ? where id = ?",
-                        (email, user_id_casted),
-                    )
+                    cursor.execute("UPDATE users SET email = ? where id = ?",(email, user_id_casted))
                     msg = {
                         "message": f"Key email changed for id {user_id_casted} with success"
                     }, 200
@@ -141,7 +139,6 @@ class Users:
                     }, 500
             else:
                 msg = {"error": "Invalid id"}, 500
-        else:
-            msg = {"mensage": "Payload is empty"}
+        
 
         return msg
