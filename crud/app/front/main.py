@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 
@@ -18,25 +19,36 @@ def get_users():
     if response.status_code == 200:
         users_data = response.json()
         if users_data:
-            st.write("### Lista de Usuários:")
-            for user in users_data:
-                st.write(f"**{user['name']}** - {user['email']}")
+            return users_data
         else:
-            st.write("Nenhum usuário encontrado.")
+            return []
     else:
         st.error("Erro ao buscar usuários.")
+        return []
+
+
+def delete_user(user_id):
+    response = requests.delete(f"{API_URL}/{user_id}")
+    if response.status_code == 200:
+        st.success(f"Usuário com ID {user_id} deletado com sucesso!")
+    else:
+        st.error(f"Erro ao deletar usuário com ID {user_id}.")
 
 
 st.title("Gerenciamento de Usuários")
 
+with st.expander("Lista de Usuários", expanded=False):
+    st.header("Usuários Cadastrados")
 
-st.header("Usuários Cadastrados")
+    if st.button("Mostrar Usuários"):
+        users_data = get_users()
+        if users_data:
+            st.write("### Lista de Usuários:")
+            for user in users_data:
+                st.write(f"**{user['name']}** - {user['email']} (ID: {user['id']})")
 
-if st.button("Mostrar Usuários"):
-    get_users()
 
-
-with st.expander("Adicionar Novo Usuário", expanded=False):
+with st.expander("Adicionar Novo Usuário", expanded=True):
     name = st.text_input("Nome do Usuário")
     email = st.text_input("E-mail do Usuário")
 
@@ -45,6 +57,26 @@ with st.expander("Adicionar Novo Usuário", expanded=False):
             add_user(name, email)
         else:
             st.warning("Por favor, preencha ambos os campos.")
+
+with st.expander("Deletar Usuário", expanded=False):
+    user_id = st.text_input("ID do Usuário para Deletar")
+
+    if user_id:
+        users_data = get_users()  
+        user = next((user for user in users_data if str(user['id']) == user_id), None)
+        
+        if user:
+
+            st.write(f"**Nome**: {user['name']}")
+            st.write(f"**E-mail**: {user['email']}")
+
+            confirm_delete = st.button("Confirmar Exclusão")
+            if confirm_delete:
+                delete_user(str(user_id))
+        else:
+            st.warning("Usuário não encontrado com o ID informado.")
+    else:
+        st.warning("Digite o ID do usuário para deletar.")
 
 # Estilização
 st.markdown("""
