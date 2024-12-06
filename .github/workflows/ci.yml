@@ -27,4 +27,4 @@ jobs:
 
       - name: Run Black
         run: |
-          black crud/app/backend/main.py crud/app/backend/services.py crud/app/frontend/main.py
+          black app_users/backend/main.py app_users/backend/services.py app_users/frontend/main.py

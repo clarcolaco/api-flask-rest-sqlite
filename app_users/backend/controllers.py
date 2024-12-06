@@ -1,26 +1,6 @@
 import sqlite3
-from sqlite3 import Connection
+from models import DbUtils
 from typing import Tuple, Dict
-
-
-class DbUtils:
-    def __init__(self, database:str):
-        self.database = database
-
-    def get_db(self) -> Connection:
-        conn = sqlite3.connect(self.database)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def init_db(self) -> None:
-        conn = self.get_db()
-        conn.execute(
-            """CREATE TABLE IF NOT EXISTS users (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                name TEXT NOT NULL,
-                                email TEXT NOT NULL UNIQUE)"""
-        )
-        conn.commit()
 
 
 class Users:
@@ -37,11 +17,18 @@ class Users:
                 conn = self.db_utils.get_db()  
                 with conn:
                     cursor = conn.cursor()
+                    
+                    cursor.execute(f"SELECT distinct email FROM users")
+                    emails_from_bd = cursor.fetchall()
+                    emails_list = [row[0] for row in emails_from_bd]
+                if email not in emails_list:
                     cursor.execute(
                         """INSERT INTO users (name, email) VALUES (?,?)""", (name, email)
                     )
                     conn.commit()
-                    msg, status = {"message": f"User added with success for email {email} "}, 201
+                    msg, status = {"message": f"User added with success for email {email} "}, 200
+                else:
+                    msg, status = {"message": f"Email {email} used for another user "}, 400
             except Exception as e:
                 msg, status = {"error": str(e)}, 500
         return msg, status
@@ -57,7 +44,7 @@ class Users:
                 if users:
                     msg, status = [dict(user) for user in users], 200
                 else:
-                    msg, status = {"message": "No users found"}, 404
+                    msg, status = {"message": "No users found"}, 400
         except Exception as e:
             msg, status = {"error": str(e)}, 500
         return msg, status
@@ -76,7 +63,7 @@ class Users:
                 if user:
                     msg, status = dict(user[0]), 200
                 else:
-                    msg, status = {"message": "No users found"}, 404
+                    msg, status = {"message": "No users found"}, 400
         except Exception as e:
             msg, status = {"error": str(e)}, 500
         return msg, status
@@ -96,7 +83,7 @@ class Users:
                         "message": f"User with id {user_id_casted} was deleted with success"
                     }, 200
                 except Exception as e:
-                    msg, status = {"message": str(e)}, 400
+                    msg, status = {"message": str(e)}, 500
             else:
                 msg, status = {"message": f"User id {user_id_casted} not found"}, 400
 

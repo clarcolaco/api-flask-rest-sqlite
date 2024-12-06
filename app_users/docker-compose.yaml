@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  backend:
+    image: backend_flask_crud/v0  
+    build:
+      context: backend  
+    ports: 
+      - "5001:5001"
+    networks:
+      - app_network
+    environment:
+      - IS_DOCKER=true 
+
+  frontend:
+    image: frontend_streamlit_crud/v0  
+    build:
+      context: frontend  
+    ports:
+      - "8501:8501"  
+    networks:
+      - app_network
+    environment:
+      # - BACKEND_URL=http://backend:5001 
+      - IS_DOCKER=true 
+
+networks:
+  app_network:
+    driver: bridge

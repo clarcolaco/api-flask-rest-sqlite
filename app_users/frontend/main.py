@@ -1,15 +1,19 @@
 
 import streamlit as st
 import requests
+import os
 
 
-API_URL = 'http://localhost:5001/users'
+IS_DOCKER = os.getenv("IS_DOCKER", "false").lower() == "true"
+API_URL = "http://backend:5001/users" if IS_DOCKER else "http://localhost:5001/users"
 
 
 def add_user(name, email):
     response = requests.post(API_URL, json={"name": name, "email": email})
-    if response.status_code == 201:
+    if response.status_code == 200:
         st.success(f"Usuário {name} adicionado com sucesso!")
+    elif response.status_code == 400:
+        st.error(f"Falha no cadastro, email {email} ja esta associado a outro usuário")
     else:
         st.error("Erro ao adicionar usuário.")
 
@@ -38,16 +42,17 @@ def delete_user(user_id):
 
 def update_user(user_id, name, email):
     if name and email:
-        response = requests.put(f"{API_URL}/{user_id}", json={"name": name, "email":email})
+        payload={"name": name, "email":email}
     elif name:
-        response = requests.put(f"{API_URL}/{user_id}", json={"name": name})
+        payload={"name": name}
     if email:
-        response = requests.put(f"{API_URL}/{user_id}", json={"email":email})
-    
+        payload={"email":email}
+
+    response = requests.put(f"{API_URL}/{user_id}",json=payload)
     if response.status_code == 200:
         st.success(f"Modificado com sucesso!")
     elif response.status_code == 400:
-        st.success(f"Email ja utilizado em outro usuario")
+        st.error(f"Email ja utilizado em outro usuario")
     else:
         st.error("Erro ao modificar o usuário.")
 
@@ -108,10 +113,8 @@ with st.expander("Modificar Usuário", expanded=False):
         user = next((user for user in users_data if str(user['id']) == user_id), None)
         
         if user:
-
             st.write(f"**Nome**: {user['name']}")
             st.write(f"**E-mail**: {user['email']}")
-
             
             name_input = st.text_input("Nome do Usuário Modificado")
             email_input = st.text_input("E-mail do Usuário Modificado")
@@ -125,7 +128,7 @@ with st.expander("Modificar Usuário", expanded=False):
 
 
 st.markdown("[By @clarcolaco - 2024](https://github.com/clarcolaco)")
-# Estilização
+
 st.markdown("""
     <style>
         .stButton>button {
