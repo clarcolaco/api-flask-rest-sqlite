@@ -1,2 +1,4 @@
 # for github actions
 black
+pytest
+pytest-cov

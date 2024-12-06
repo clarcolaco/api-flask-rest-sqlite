@@ -17,16 +17,17 @@ class Users:
                 conn = self.db_utils.get_db()  
                 with conn:
                     cursor = conn.cursor()
-                    
                     cursor.execute(f"SELECT distinct email FROM users")
                     emails_from_bd = cursor.fetchall()
                     emails_list = [row[0] for row in emails_from_bd]
+
                 if email not in emails_list:
                     cursor.execute(
                         """INSERT INTO users (name, email) VALUES (?,?)""", (name, email)
                     )
                     conn.commit()
                     msg, status = {"message": f"User added with success for email {email} "}, 200
+                
                 else:
                     msg, status = {"message": f"Email {email} used for another user "}, 400
             except Exception as e:
@@ -59,7 +60,6 @@ class Users:
                 cursor.execute(f"SELECT * FROM users where id={user_id_casted}")
                 conn.commit()
                 user = cursor.fetchall()
-                
                 if user:
                     msg, status = dict(user[0]), 200
                 else:
