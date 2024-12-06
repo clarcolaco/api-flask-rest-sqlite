@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r crud/requirements.txt
+          pip install -r app_users/requirements.txt
 
       - name: Run Black
         run: |
