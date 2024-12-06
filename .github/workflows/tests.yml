@@ -8,7 +8,7 @@ on:
       - '**.py'
 
 jobs:
-  format-check:
+  tests-check-pytest:
     runs-on: ubuntu-latest
     
     steps:
