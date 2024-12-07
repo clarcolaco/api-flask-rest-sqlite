@@ -20,7 +20,6 @@ services:
     networks:
       - app_network
     environment:
-      # - BACKEND_URL=http://backend:5001 
       - IS_DOCKER=true 
 
 networks:
