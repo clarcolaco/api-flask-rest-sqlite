@@ -399,3 +399,4 @@ FodyWeavers.xsd
 
 
 env_flask
+.pytest_cache
