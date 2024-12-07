@@ -1,14 +1,11 @@
 from flask import Flask, request
-from controllers import  Users
+from controllers import Users
 from models import DbUtils
-from typing import Tuple 
+from typing import Tuple
 import os
-
 
 IS_DOCKER = os.getenv("IS_DOCKER", "false").lower() == "true"
 HOST = "0.0.0.0" if IS_DOCKER else "127.0.0.1"
-
-
 
 app = Flask(__name__)
 
@@ -50,8 +47,8 @@ def update_user_by_id(user_id: str) -> Tuple[dict, int]:
     payload = request.get_json()
     if payload:
         response, status_code = Users(db_utils).updating_user_by_id(
-        payload=payload, user_id=user_id
-    )
+            payload=payload, user_id=user_id
+        )
     else:
         response, status_code = {"mensage": "Payload is empty"}, 400
     return response, status_code

@@ -24,7 +24,7 @@ Copy and past:
 version: '3.8'
 services:
   backend:
-    image: clar1703/backend_flask_crud
+    image: clar1703/backend_flask_crud:v1
     build:
       context: backend  
     ports: 
@@ -35,7 +35,7 @@ services:
       - IS_DOCKER=true 
 
   frontend:
-    image: clar1703/frontend_streamlit_crud
+    image: clar1703/frontend_streamlit_crud:v1
     build:
       context: frontend  
     ports:
@@ -79,7 +79,7 @@ cole isso:
 version: '3.8'
 services:
   backend:
-    image: clar1703/backend_flask_crud
+    image: clar1703/backend_flask_crud:v1
     build:
       context: backend  
     ports: 
@@ -90,7 +90,7 @@ services:
       - IS_DOCKER=true 
 
   frontend:
-    image: clar1703/frontend_streamlit_crud
+    image: clar1703/frontend_streamlit_crud:v1
     build:
       context: frontend  
     ports:

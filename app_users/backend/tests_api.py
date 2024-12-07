@@ -1,135 +1,113 @@
-import pytest
+import unittest
 from unittest.mock import MagicMock
-from controllers import Users  
+from controllers import Users
+from models import DbUtils
 
-@pytest.fixture
-def mock_db_utils():
-    mock = MagicMock()
-    mock.get_db.return_value = MagicMock()
-    return mock
 
-def test_creating_user_success(mock_db_utils):
+class TestUsersController(unittest.TestCase):
+    def setUp(self):
+        self.mock_db_utils = MagicMock(spec=DbUtils)
+        self.users_controller = Users(db_utils=self.mock_db_utils)
 
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = []  
+    def test_creating_user_success(self):
+        self.mock_db_utils.execute_query.return_value = [
+            ("existing_email@example.com",)
+        ]
+        response, status = self.users_controller.creating_user(
+            "Test User", "test@test.com"
+        )
+        self.assertEqual(status, 200)
+        self.assertIn("User added with success", response["message"])
+        self.mock_db_utils.execute_query.assert_called()
 
-    user_service = Users(mock_db_utils)
+    def test_creating_user_duplicate_email(self):
+        self.mock_db_utils.execute_query.side_effect = [[("test@test.com",)], None]
+        response, status = self.users_controller.creating_user(
+            "Second test user", "test@test.com"
+        )
+        self.assertEqual(status, 400)
+        self.assertIn("Email test@test.com used for another user", response["message"])
 
-    name = "Teste User"
-    email = "teste@example.com"
-    msg, status = user_service.creating_user(name, email)
+    def test_creating_user_invalid_payload(self):
+        response, status = self.users_controller.creating_user("", "")
+        self.assertEqual(status, 400)
+        self.assertIn("Invalid payload", response["error"])
 
-    assert status == 200
-    assert msg == {"message": "User added with success for email teste@example.com "}
+    def test_getting_users_success(self):
+        self.mock_db_utils.execute_query.return_value = [
+            {"id": 1, "name": "Test User", "email": "test@test.com"}
+        ]
+        response, status = self.users_controller.getting_users()
+        self.assertEqual(status, 200)
+        self.assertEqual(len(response), 1)
 
-def test_creating_user_email_exists(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = [("teste@example.com",)]  # Email já no banco
+    def test_getting_users_no_data(self):
+        self.mock_db_utils.execute_query.return_value = []
+        response, status = self.users_controller.getting_users()
+        self.assertEqual(status, 400)
+        self.assertIn("No users found", response["message"])
 
-    user_service = Users(mock_db_utils)
+    def test_get_one_user_by_id_success(self):
+        self.mock_db_utils.execute_query.return_value = [
+            {"id": 1, "name": "Test User", "email": "test@test.com"}
+        ]
+        response, status = self.users_controller.get_one_user_by_id("1")
+        self.assertEqual(status, 200)
+        self.assertIn("id", response)
 
-    name = "Jane Doe"
-    email = "teste@example.com"
-    msg, status = user_service.creating_user(name, email)
+    def test_get_one_user_by_id_not_found(self):
+        self.mock_db_utils.execute_query.return_value = []
+        response, status = self.users_controller.get_one_user_by_id("1")
+        self.assertEqual(status, 400)
+        self.assertIn("No users found", response["message"])
 
-    assert status == 400
-    assert msg == {"message": "Email teste@example.com used for another user "}
+    def test_delete_one_user_by_id_success(self):
+        self.mock_db_utils.execute_query.side_effect = [
+            [{"id": 1, "name": "Test User", "email": "test@test.com"}],
+            None,
+        ]
+        response, status = self.users_controller.delete_one_user_by_id("1")
+        self.assertEqual(status, 200)
+        self.assertIn("User with id 1 was deleted", response["message"])
 
-def test_getting_users_no_users(mock_db_utils):
+    def test_delete_one_user_by_id_not_found(self):
+        self.mock_db_utils.execute_query.return_value = []
+        response, status = self.users_controller.delete_one_user_by_id("99")
+        self.assertEqual(status, 400)
+        self.assertIn("User id 99 not found", response["message"])
 
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = []
+    def test_updating_user_by_id_success(self):
+        self.mock_db_utils.execute_query.side_effect = [
+            [{"id": 1, "name": "Test User", "email": "test@test.com"}],
+            [("existing_email@example.com",)],
+            None,  # Update query
+        ]
+        response, status = self.users_controller.updating_user_by_id(
+            {"name": "Test Updated", "email": "test.updated@example.com"}, "1"
+        )
+        self.assertEqual(status, 200)
+        self.assertIn("changed for id 1 with success", response["message"])
 
-    user_service = Users(mock_db_utils)
+    def test_updating_user_by_id_invalid_payload(self):
+        self.mock_db_utils.execute_query.side_effect = [
+            [{"id": 1, "name": "Test User", "email": "test@test.com"}],
+            [("existing_email@example.com",)],
+        ]
+        response, status = self.users_controller.updating_user_by_id({}, "1")
+        self.assertEqual(status, 500)
+        self.assertIn("Isn't a valid payload", response["error"])
 
-    msg, status = user_service.getting_users()
+    def test_updating_user_by_id_email_conflict(self):
+        self.mock_db_utils.execute_query.side_effect = [
+            [{"id": 1, "name": "Test User", "email": "test@test.com"}],
+            [("test@test.com",)],
+        ]
+        response, status = self.users_controller.updating_user_by_id(
+            {"email": "test@test.com"}, "1"
+        )
+        self.assertEqual(status, 400)
+        self.assertIn("This email is alread set by other user", response["message"])
 
-    assert status == 400
-    assert msg == {"message": "No users found"}
 
-def test_get_one_user_by_id_not_found_and_dict_empty(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = []  
-
-    user_service = Users(mock_db_utils)
-
-    user_id = "12"
-    msg, status = user_service.get_one_user_by_id(user_id)
-
-    assert status == 400
-    assert msg == {"message": "No users found"}
-
-def test_deleting_user_success(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = [("1", "Teste User", "teste@example.com")]  # Usuário encontrado
-
-    user_service = Users(mock_db_utils)
-    user_id = "1"
-    msg, status = user_service.delete_one_user_by_id(user_id)
-
-    assert status == 200
-    assert msg == {"message": "User with id 1 was deleted with success"}
-
-def test_deleting_user_not_found(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = []
-
-    user_service = Users(mock_db_utils)
-    user_id = "999"
-    msg, status = user_service.delete_one_user_by_id(user_id)
-
-    assert status == 400
-    assert msg == {"message": "User id 999 not found"}
-
-def test_updating_user_success(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.side_effect = [
-        [("1", "Teste User", "teste@example.com")],
-        []
-    ]
-    user_service = Users(mock_db_utils)
-    user_id = "1"
-    payload = {"name": "Joao Updated", "email": "Joao.updated@example.com"}
-    msg, status = user_service.updating_user_by_id(payload, user_id)
-
-    assert status == 200
-    assert msg == {"message": "Keys name and email changed for id 1 with success"}
-
-def test_updating_user_email_conflict(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.side_effect = [
-        [("teste@example.com")],  
-        [("jane@example.com",)]  
-    ]
-
-    user_service = Users(mock_db_utils)
-
-    user_id = "1"
-    payload = {"name": "Joao Updated", "email": "jane@example.com"}
-    msg, status = user_service.updating_user_by_id(payload, user_id)
-
-    assert status == 400
-    assert msg == {"message": "This email is alread set by other user"}
-
-def test_updating_user_invalid_payload(mock_db_utils):
-    mock_conn = mock_db_utils.get_db.return_value
-    mock_cursor = mock_conn.cursor.return_value
-    mock_cursor.fetchall.return_value = []  
-
-    user_service = Users(mock_db_utils)
-
-    user_id = "999"
-    payload = {"name": "Joao Updated", "email": "Joao.updated@example.com"}
-    msg, status = user_service.updating_user_by_id(payload, user_id)
-
-    assert status == 500
-    assert msg == {"error": "Invalid id"}
-
+if __name__ == "__main__":
+    unittest.main()
