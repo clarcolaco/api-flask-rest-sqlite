@@ -50,7 +50,7 @@ networks:
     driver: bridge
 ```
 
-- then run - docker-compose up --build --no-deps
+- then run - docker-compose up 
 
 ##############################################################################
 # [Pt] api-flask-rest-sqllite
@@ -105,7 +105,7 @@ networks:
     driver: bridge
 ```
 
-- e rode - docker-compose up --build --no-deps
+- e rode - docker-compose up 
 
 
 
