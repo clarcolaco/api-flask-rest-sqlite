@@ -35,7 +35,7 @@ services:
       - IS_DOCKER=true 
 
   frontend:
-    image: clar1703/frontend_streamlit_crud:v1
+    image: clar1703/frontend_streamlit_crud:v2
     build:
       context: frontend  
     ports:
@@ -90,7 +90,7 @@ services:
       - IS_DOCKER=true 
 
   frontend:
-    image: clar1703/frontend_streamlit_crud:v1
+    image: clar1703/frontend_streamlit_crud:v2
     build:
       context: frontend  
     ports:
