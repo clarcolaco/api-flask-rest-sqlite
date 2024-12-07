@@ -27,4 +27,4 @@ jobs:
 
       - name: Run Black
         run: |
-          black app_users/backend/main.py app_users/backend/controllers.py app_users/frontend/main.py
+          black .
