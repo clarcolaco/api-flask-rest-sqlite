@@ -1,0 +1,30 @@
+name: Python CI with Black
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**.py'
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9' 
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app_users/requirements.txt
+
+      - name: Run Black
+        run: |
+          black app_users/backend/main.py app_users/backend/controllers.py app_users/frontend/main.py
