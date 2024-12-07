@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 
 @app.route("/", methods=["GET"])
-def homepage() -> Tuple[dict, int]:
+def healthcheck() -> Tuple[dict, int]:
     response, status_code = {"message": "API is on"}, 200
     return response, status_code
 
